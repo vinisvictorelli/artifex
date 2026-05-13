@@ -1,14 +1,24 @@
 ---
-title: Smart Auto Editor
-emoji: 😻
-colorFrom: indigo
-colorTo: pink
-sdk: streamlit
-sdk_version: 1.40.2
-app_file: app.py
-pinned: false
-license: agpl-3.0
-short_description: 'a automatic smart editor '
+
+# Artifex - Estrutura do Projeto
+
+- `frontend/` — Interface web (React + TypeScript)
+- `backend/` — API (FastAPI em Python)
+- `artifex/` — Código de processamento Python
+
+## Como rodar cada parte
+
+### Frontend
+1. Vá para a pasta `frontend/`
+2. Siga as instruções do `frontend/README.md`
+
+### Backend
+1. Vá para a pasta `backend/`
+2. Siga as instruções do `backend/README.md`
+
+### Processamento (artifex/)
+- O backend pode importar e usar funções do diretório `artifex/` para processar dados.
+
 ---
 
-Check out the configuration reference at https://huggingface.co/docs/hub/spaces-config-reference
+Esta estrutura facilita o desenvolvimento separado de interface, API e lógica de processamento.
