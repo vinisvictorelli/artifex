@@ -1,0 +1,21 @@
+appId: com.artifex.desktop
+productName: Artifex
+directories:
+  output: release
+  buildResources: build
+files:
+  - dist-electron/**/*
+  - dist-renderer/**/*
+extraResources:
+  - from: ../backend
+    to: backend
+    filter:
+      - "**/*"
+      - "!**/__pycache__/**"
+mac:
+  category: public.app-category.video
+linux:
+  target: [AppImage]
+  category: Video
+win:
+  target: [nsis]

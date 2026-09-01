@@ -1,0 +1,19 @@
+{
+  "name": "artifex-workspace",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "apps/desktop"
+  ],
+  "scripts": {
+    "setup": "poetry install && npm install",
+    "dev": "concurrently -k -n BACKEND,DESKTOP -c magenta,cyan \"npm:dev:backend\" \"npm:dev:desktop\"",
+    "dev:backend": "poetry run uvicorn app.main:app --reload --app-dir apps/backend",
+    "dev:desktop": "npm run dev --workspace apps/desktop",
+    "build": "npm run build --workspace apps/desktop"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0",
+    "electron": "^44.1.1"
+  }
+}

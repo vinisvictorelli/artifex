@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+
+# macOS
+._*
+.DS_Store
+
+# Node
+node_modules/
+dist/
+dist-renderer/
+dist-electron/
+release/
+*.tsbuildinfo
+
+# Runtime artifacts
+tmp/
+*.log

@@ -1,11 +1,13 @@
 [tool.poetry]
-name = "Artifex"
+name = "artifex"
 version = "0.1.0"
 description = "Artifex simplifies content creation with smart automation, helping you create faster and focus on your ideas."
 authors = ["vinisvictorelli <vini.svictorelli@gmail.com>"]
 license = "GPLv3"
 readme = "README.md"
-
+packages = [
+    { include = "artifex_core", from = "packages/core" },
+]
 
 [tool.poetry.dependencies]
 python = ">=3.12,<4"
@@ -14,12 +16,12 @@ numpy = "<2"
 moviepy = "==2.1.1"
 pydub = "==0.25.1"
 speechrecognition = "==3.11.0"
-streamlit = "==1.40.2"
-openai-whisper = ">=20240930,<20240931"
+openai-whisper = ">=20250625,<20250626"
 certifi = ">=2024.12.14,<2025.0.0"
-textual = ">=1.0.0,<2.0.0"
 yt-dlp = "^2025.2.19"
-pyqt5 = "^5.15.11"
+fastapi = "^0.115.0"
+uvicorn = "^0.34.0"
+python-multipart = "^0.0.20"
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
