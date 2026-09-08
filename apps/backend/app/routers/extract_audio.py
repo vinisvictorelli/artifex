@@ -9,9 +9,10 @@ router = APIRouter(prefix="/extract-audio", tags=["extract-audio"])
 class ExtractAudioRequest(BaseModel):
     video_path: str
     output_path: str | None = None
+    format: str = "wav"
 
 
 @router.post("")
 def extract_audio(request: ExtractAudioRequest):
-    output = extract_audio_core(request.video_path, request.output_path)
+    output = extract_audio_core(request.video_path, request.output_path, request.format)
     return {"output_path": output}

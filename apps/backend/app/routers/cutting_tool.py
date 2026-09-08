@@ -9,9 +9,10 @@ router = APIRouter(prefix="/cutting-tool", tags=["cutting-tool"])
 class AutoCutRequest(BaseModel):
     video_path: str
     output_path: str
+    format: str = "mp4"
 
 
 @router.post("/auto-cut")
 def auto_cut_endpoint(request: AutoCutRequest):
-    output = auto_cut(request.video_path, request.output_path)
+    output = auto_cut(request.video_path, request.output_path, request.format)
     return {"output_path": output}

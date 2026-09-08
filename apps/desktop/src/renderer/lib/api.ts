@@ -16,10 +16,10 @@ export const api = {
   autoCaption: (payload: { audio_path: string; output_path: string }) =>
     post<{ output_path: string }>("/auto-caption", payload),
 
-  extractAudio: (payload: { video_path: string; output_path?: string }) =>
+  extractAudio: (payload: { video_path: string; output_path?: string; format?: string }) =>
     post<{ output_path: string }>("/extract-audio", payload),
 
-  autoCut: (payload: { video_path: string; output_path: string }) =>
+  autoCut: (payload: { video_path: string; output_path: string; format?: string }) =>
     post<{ output_path: string }>("/cutting-tool/auto-cut", payload),
 
   download: (payload: { url: string; dest: string; format?: string }) =>
