@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routers import auto_caption, cutting_tool, downloader, extract_audio
+from app.routers import auto_caption, convert_image, cutting_tool, downloader, extract_audio
 
 app = FastAPI(title="Artifex API")
 
@@ -17,6 +17,7 @@ app.add_middleware(
 )
 
 app.include_router(auto_caption.router)
+app.include_router(convert_image.router)
 app.include_router(cutting_tool.router)
 app.include_router(downloader.router)
 app.include_router(extract_audio.router)

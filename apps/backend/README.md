@@ -13,8 +13,11 @@ poetry run uvicorn app.main:app --reload --app-dir apps/backend
 
 A API sobe em `http://127.0.0.1:8000`. Endpoints:
 
-- `POST /downloader` — baixa um vídeo via yt-dlp
+- `POST /downloader` — inicia o download via yt-dlp e devolve `{job_id}`
+- `GET /downloader/{job_id}` — progresso (`status`, `phase`, `downloaded`, `total`, `percent`, `speed`, `eta`)
+- `DELETE /downloader/{job_id}` — cancela o download e apaga os arquivos parciais
 - `POST /extract-audio` — extrai áudio de um vídeo
+- `POST /convert-image` — converte uma imagem entre formatos (PNG, JPEG, GIF, WebP, BMP, TIFF, ICO, TGA, PDF, AVIF)
 - `POST /auto-caption` — gera legendas .srt via Whisper
 - `POST /cutting-tool/auto-cut` — remove silêncios de um vídeo
 

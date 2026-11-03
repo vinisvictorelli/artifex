@@ -1,9 +1,10 @@
 import type { ComponentType } from "react";
-import { AudioLines, Captions, Download, Scissors, type LucideIcon } from "lucide-react";
+import { AudioLines, Captions, Download, Image, Scissors, type LucideIcon } from "lucide-react";
 import { DownloadTool } from "./DownloadTool";
 import { ExtractAudioTool } from "./ExtractAudioTool";
 import { AutoCaptionTool } from "./AutoCaptionTool";
 import { AutoCutTool } from "./AutoCutTool";
+import { ConvertImageTool } from "./ConvertImageTool";
 
 export type ToolDef = {
   id: string;
@@ -42,5 +43,12 @@ export const tools: ToolDef[] = [
     description: "Remove silêncios do vídeo.",
     icon: Scissors,
     Component: AutoCutTool,
+  },
+  {
+    id: "convert-image",
+    label: "Converter imagem",
+    description: "Converte imagens entre PNG, JPEG, GIF e outros.",
+    icon: Image,
+    Component: ConvertImageTool,
   },
 ];

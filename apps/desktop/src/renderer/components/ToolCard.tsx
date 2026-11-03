@@ -6,9 +6,15 @@ type ToolCardProps = {
   children: ReactNode;
   onRun: () => Promise<unknown>;
   runLabel?: string;
+  /** Conteúdo exibido entre os campos e o botão (ex.: barra de progresso). */
+  progress?: ReactNode;
+  /** Quando informado, aparece um botão "Cancelar" durante a execução. */
+  onCancel?: () => void;
+  /** Mantém o botão desabilitado por um trabalho em andamento iniciado fora do card. */
+  busy?: boolean;
 };
 
-export function ToolCard({ title, description, children, onRun, runLabel = "Executar" }: ToolCardProps) {
+export function ToolCard({ title, description, children, onRun, runLabel = "Executar", progress, onCancel, busy = false }: ToolCardProps) {
   const [status, setStatus] = useState<"idle" | "running" | "done" | "error">("idle");
   const [message, setMessage] = useState("");
 
@@ -34,14 +40,25 @@ export function ToolCard({ title, description, children, onRun, runLabel = "Exec
 
       <div className="flex flex-col gap-2">{children}</div>
 
+      {progress}
+
       <div className="flex items-center gap-3">
         <button
           onClick={handleRun}
-          disabled={status === "running"}
+          disabled={status === "running" || busy}
           className="rounded-md bg-accent px-3 py-1.5 text-xs font-medium text-white hover:bg-accent/90 disabled:opacity-50 transition-colors"
         >
-          {status === "running" ? "Executando..." : runLabel}
+          {status === "running" || busy ? "Executando..." : runLabel}
         </button>
+        {onCancel && (status === "running" || busy) && (
+          <button
+            type="button"
+            onClick={onCancel}
+            className="rounded-md border border-white/10 px-3 py-1.5 text-xs text-neutral-300 hover:bg-white/5 transition-colors"
+          >
+            Cancelar
+          </button>
+        )}
         {status === "done" && <span className="text-xs text-emerald-400">Concluído</span>}
         {status === "error" && <span className="text-xs text-red-400">Erro</span>}
       </div>

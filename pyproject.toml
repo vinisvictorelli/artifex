@@ -10,18 +10,21 @@ packages = [
 ]
 
 [tool.poetry.dependencies]
-python = ">=3.12,<4"
-torch = "==2.2.2"
-numpy = "<2"
-moviepy = "==2.1.1"
+python = ">=3.12,<3.15"
+torch = ">=2.9"
+numpy = ">=2"
+pillow = ">=11.3"
+moviepy = ">=2.2"
 pydub = "==0.25.1"
 speechrecognition = "==3.11.0"
 openai-whisper = ">=20250625,<20250626"
 certifi = ">=2024.12.14,<2025.0.0"
-yt-dlp = "^2025.2.19"
+yt-dlp = {version = ">=2026.10", extras = ["default"]}
 fastapi = "^0.115.0"
 uvicorn = "^0.34.0"
 python-multipart = "^0.0.20"
+audioop-lts = {version = ">=0.2", markers = "python_version >= \"3.13\""}
+standard-aifc = {version = ">=3.13", markers = "python_version >= \"3.13\""}
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]

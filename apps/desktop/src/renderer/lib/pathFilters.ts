@@ -12,6 +12,14 @@ export const AUDIO_FILTERS: PathFilter[] = [
   ALL,
 ];
 
+export const IMAGE_FILTERS: PathFilter[] = [
+  {
+    name: "Imagem",
+    extensions: ["png", "jpg", "jpeg", "gif", "webp", "bmp", "tiff", "tif", "ico", "tga", "avif"],
+  },
+  ALL,
+];
+
 export const SRT_FILTERS: PathFilter[] = [{ name: "Legenda SRT", extensions: ["srt"] }, ALL];
 
 // --- Formatos de saída (seletor de formato) ---------------------------------
@@ -33,6 +41,22 @@ export const EXTRACT_AUDIO_FORMATS: FormatOption[] = [
   { value: "flac", label: "FLAC" },
   { value: "ogg", label: "OGG" },
 ];
+
+export const IMAGE_FORMATS: FormatOption[] = [
+  { value: "png", label: "PNG" },
+  { value: "jpg", label: "JPEG" },
+  { value: "gif", label: "GIF" },
+  { value: "webp", label: "WebP" },
+  { value: "avif", label: "AVIF" },
+  { value: "bmp", label: "BMP" },
+  { value: "tiff", label: "TIFF" },
+  { value: "ico", label: "ICO" },
+  { value: "tga", label: "TGA" },
+  { value: "pdf", label: "PDF" },
+];
+
+/** Formatos de imagem que aceitam o parâmetro de qualidade. */
+export const IMAGE_QUALITY_FORMATS = ["jpg", "webp", "avif"];
 
 export const AUTO_CUT_FORMATS: FormatOption[] = [
   { value: "mp4", label: "MP4" },
