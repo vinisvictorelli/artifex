@@ -40,6 +40,19 @@ export type JobStatus = {
   error: string | null;
 };
 
+export type VideoQuality = {
+  height: number;
+  fps: number | null;
+  label: string;
+  size: number | null;
+};
+
+export type VideoInfo = {
+  title: string;
+  duration: number | null;
+  qualities: VideoQuality[];
+};
+
 export const api = {
   autoCaption: (payload: { audio_path: string; output_path: string }) =>
     post<{ output_path: string }>("/auto-caption", payload),
@@ -57,7 +70,9 @@ export const api = {
   autoCut: (payload: { video_path: string; output_path: string; format?: string }) =>
     post<{ output_path: string }>("/cutting-tool/auto-cut", payload),
 
-  downloadStart: (payload: { url: string; dest: string; format?: string }) =>
+  downloadInfo: (url: string) => post<VideoInfo>("/downloader/info", { url }),
+
+  downloadStart: (payload: { url: string; dest: string; format?: string; height?: number }) =>
     post<{ job_id: string }>("/downloader", payload),
 
   downloadStatus: (jobId: string) => request<JobStatus>("GET", `/downloader/${jobId}`),

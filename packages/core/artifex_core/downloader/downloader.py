@@ -1,3 +1,4 @@
+import json
 import os
 import re
 import shutil
@@ -24,6 +25,21 @@ class DownloadError(RuntimeError):
 
 class DownloadCancelled(Exception):
     """O download foi cancelado pelo usuário."""
+
+
+@dataclass
+class Quality:
+    height: int
+    fps: int | None
+    label: str
+    size: int | None  # bytes (vídeo + melhor áudio); None quando o yt-dlp não informa
+
+
+@dataclass
+class VideoInfo:
+    title: str
+    duration: int | None
+    qualities: list[Quality]
 
 
 @dataclass
@@ -73,19 +89,92 @@ def _base_args() -> list[str]:
     return args
 
 
-def _build_args(url: str, dest: str, format: str) -> list[str]:
+def _build_args(url: str, dest: str, format: str, height: int | None = None) -> list[str]:
     if format in AUDIO_FORMATS:
         return [*_base_args(), "-x", "--audio-format", format, "-o", dest, url]
+    if height:
+        selector = f"bv*[height<={height}]+ba/b[height<={height}]"
+    else:
+        selector = "bv*+ba/b"
     return [
         *_base_args(),
         "-f",
-        "bv*+ba/b",
+        selector,
         "--merge-output-format",
         format,
         "-o",
         dest,
         url,
     ]
+
+
+def _size(fmt: dict) -> int | None:
+    value = fmt.get("filesize") or fmt.get("filesize_approx")
+    return int(value) if value else None
+
+
+def parse_qualities(info: dict) -> list[Quality]:
+    """
+    Extrai as qualidades de vídeo disponíveis do JSON do yt-dlp (-J).
+
+    Mantém um item por altura (o de maior fps/bitrate) e soma o tamanho do
+    melhor áudio ao do vídeo quando ambos são conhecidos. Ordem: maior primeiro.
+    """
+    formats = info.get("formats") or []
+    video = [f for f in formats if f.get("vcodec") not in (None, "none") and f.get("height")]
+    audio = [
+        f for f in formats if f.get("acodec") not in (None, "none") and f.get("vcodec") in (None, "none")
+    ]
+    best_audio = max(audio, key=lambda f: f.get("abr") or f.get("tbr") or 0, default=None)
+    audio_size = _size(best_audio) if best_audio else None
+
+    def rank(f: dict) -> tuple[float, float]:
+        return (f.get("fps") or 0, f.get("tbr") or 0)
+
+    by_height: dict[int, dict] = {}
+    for f in video:
+        h = int(f["height"])
+        if h not in by_height or rank(f) > rank(by_height[h]):
+            by_height[h] = f
+
+    qualities = []
+    for h in sorted(by_height, reverse=True):
+        f = by_height[h]
+        fps = int(f["fps"]) if f.get("fps") else None
+        label = f"{h}p{fps}" if fps and fps > 30 else f"{h}p"
+        size = _size(f)
+        # Formato já combinado (com áudio) não precisa somar a trilha de áudio.
+        has_audio = f.get("acodec") not in (None, "none")
+        if size is not None and not has_audio and audio_size:
+            size += audio_size
+        qualities.append(Quality(height=h, fps=fps, label=label, size=size))
+    return qualities
+
+
+def get_video_info(url: str) -> VideoInfo:
+    """Consulta título, duração e qualidades disponíveis sem baixar nada."""
+    query = [*_base_args(), "-J", "--no-playlist", "--no-warnings", url]
+    try:
+        proc = subprocess.run(query, capture_output=True, text=True, timeout=60)
+    except subprocess.TimeoutExpired as exc:
+        raise DownloadError("Tempo esgotado ao consultar o vídeo") from exc
+    except OSError as exc:
+        raise DownloadError(f"Não foi possível executar o yt-dlp: {exc}") from exc
+
+    if proc.returncode != 0:
+        errors = [l for l in proc.stderr.splitlines() if l.startswith("ERROR")]
+        raise DownloadError(errors[-1] if errors else proc.stderr.strip() or "Falha ao consultar o vídeo")
+    try:
+        info = json.loads(proc.stdout)
+    except json.JSONDecodeError as exc:
+        raise DownloadError("Resposta inválida do yt-dlp") from exc
+
+    duration = info.get("duration")
+    return VideoInfo(
+        title=info.get("title") or "",
+        duration=int(duration) if duration else None,
+        qualities=parse_qualities(info),
+    )
 
 
 def _expected_size(args: list[str]) -> int | None:
@@ -136,6 +225,7 @@ def download_file(
     format: str = "mp4",
     on_progress: Callable[[Progress], None] | None = None,
     cancel_event: threading.Event | None = None,
+    height: int | None = None,
 ) -> str:
     """
     Baixa um vídeo (ou apenas o áudio) usando yt-dlp.
@@ -150,13 +240,15 @@ def download_file(
             entre as trilhas (vídeo + áudio), então nunca retrocede.
         cancel_event: Quando sinalizado, interrompe o download, apaga os
             arquivos parciais e levanta DownloadCancelled.
+        height: Altura máxima do vídeo (ex.: 1080). None baixa a melhor
+            qualidade; ignorado para formatos de áudio.
 
     Returns:
         Caminho do arquivo baixado (dest).
     """
     report = on_progress or (lambda _p: None)
     cancel = cancel_event or threading.Event()
-    args = _build_args(url, dest, format)
+    args = _build_args(url, dest, format, height)
 
     progress = Progress()
     report(progress)

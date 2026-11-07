@@ -1,7 +1,9 @@
 import threading
 
+from dataclasses import asdict
+
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app import jobs
 from artifex_core.downloader.downloader import (
@@ -9,6 +11,7 @@ from artifex_core.downloader.downloader import (
     DownloadError,
     Progress,
     download_file,
+    get_video_info,
 )
 
 router = APIRouter(prefix="/downloader", tags=["downloader"])
@@ -18,6 +21,11 @@ class DownloadRequest(BaseModel):
     url: str
     dest: str
     format: str = "mp4"
+    height: int | None = Field(default=None, gt=0)
+
+
+class InfoRequest(BaseModel):
+    url: str
 
 
 def _run(job: jobs.Job, request: DownloadRequest) -> None:
@@ -27,7 +35,12 @@ def _run(job: jobs.Job, request: DownloadRequest) -> None:
 
     try:
         output = download_file(
-            request.url, request.dest, request.format, on_progress, job.cancel_event
+            request.url,
+            request.dest,
+            request.format,
+            on_progress,
+            job.cancel_event,
+            request.height,
         )
         jobs.finish(job, "done", output_path=output, speed=None, eta=None)
     except DownloadCancelled:
@@ -36,6 +49,15 @@ def _run(job: jobs.Job, request: DownloadRequest) -> None:
         jobs.finish(job, "error", error=str(exc))
     except Exception as exc:  # falha inesperada não pode deixar o job "running" para sempre
         jobs.finish(job, "error", error=f"{type(exc).__name__}: {exc}")
+
+
+@router.post("/info")
+def video_info(request: InfoRequest):
+    # def síncrona: o FastAPI a executa em threadpool, sem bloquear o event loop.
+    try:
+        return asdict(get_video_info(request.url))
+    except DownloadError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
 
 
 @router.post("")

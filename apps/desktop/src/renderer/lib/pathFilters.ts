@@ -34,6 +34,12 @@ export const DOWNLOAD_FORMATS: FormatOption[] = [
   { value: "m4a", label: "M4A (somente áudio)" },
 ];
 
+const DOWNLOAD_AUDIO_FORMATS = new Set(["mp3", "m4a"]);
+
+export function isAudioDownloadFormat(format: string): boolean {
+  return DOWNLOAD_AUDIO_FORMATS.has(format);
+}
+
 export const EXTRACT_AUDIO_FORMATS: FormatOption[] = [
   { value: "wav", label: "WAV" },
   { value: "mp3", label: "MP3" },
