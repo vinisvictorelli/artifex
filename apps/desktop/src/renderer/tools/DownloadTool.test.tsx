@@ -143,6 +143,30 @@ describe("consulta de qualidades", () => {
     expect(button.disabled).toBe(false);
   });
 
+  it("o botão 'Buscar qualidades' repete a consulta que falhou", async () => {
+    mocked.downloadInfo.mockRejectedValueOnce(new Error("Failed to fetch"));
+    render(<DownloadTool />);
+    typeUrl(URL_A);
+    await settle();
+    expect(qualitySelect()).toBeNull();
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Buscar qualidades" }));
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    expect(mocked.downloadInfo).toHaveBeenCalledTimes(2);
+    expect(qualitySelect()).not.toBeNull();
+    expect(screen.queryByRole("button", { name: "Buscar qualidades" })).toBeNull();
+  });
+
+  it("o botão só aparece com uma URL http(s) válida", async () => {
+    render(<DownloadTool />);
+    expect(screen.queryByRole("button", { name: "Buscar qualidades" })).toBeNull();
+    typeUrl("não é url");
+    expect(screen.queryByRole("button", { name: "Buscar qualidades" })).toBeNull();
+    typeUrl(URL_A);
+    expect(screen.getByRole("button", { name: "Buscar qualidades" })).toBeTruthy();
+  });
+
   it("trocar a URL descarta qualidades e escolha anteriores", async () => {
     render(<DownloadTool />);
     typeUrl(URL_A);

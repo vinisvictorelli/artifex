@@ -22,6 +22,7 @@ const PHASE_LABELS: Record<string, string> = {
 };
 
 const BEST = "best";
+const HTTP_URL = /^https?:\/\//i;
 
 type InfoState = "idle" | "loading" | "ready" | "error";
 
@@ -68,7 +69,7 @@ export function DownloadTool() {
     setInfo(null);
     setQuality(BEST);
     setInfoState("idle");
-    if (!/^https?:\/\//i.test(target)) return;
+    if (!HTTP_URL.test(target)) return;
     const timer = setTimeout(() => fetchInfo(target), 600);
     return () => clearTimeout(timer);
   }, [url]);
@@ -124,6 +125,15 @@ export function DownloadTool() {
       }
     >
       <PathInput label="URL" value={url} onChange={setUrl} placeholder="https://..." />
+      {HTTP_URL.test(url.trim()) && infoState !== "loading" && infoState !== "ready" && (
+        <button
+          type="button"
+          onClick={() => fetchInfo(url.trim())}
+          className="self-start rounded-md border border-white/10 px-2.5 py-1 text-[11px] text-neutral-300 hover:bg-white/5 transition-colors"
+        >
+          Buscar qualidades
+        </button>
+      )}
       {infoState === "loading" && (
         <p className="text-[11px] text-neutral-500">Buscando qualidades...</p>
       )}
