@@ -12,7 +12,8 @@
     "build": "tsc -b && vite build && electron-builder",
     "build:renderer": "vite build",
     "build:electron": "tsc -p tsconfig.electron.json",
-    "typecheck": "tsc -b --noEmit"
+    "typecheck": "tsc -b --noEmit",
+    "test": "vitest run"
   },
   "dependencies": {
     "lucide-react": "^1.39.0",
@@ -20,6 +21,8 @@
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
+    "@testing-library/react": "^16.3.3",
+    "@testing-library/user-event": "^14.6.8",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.3",
@@ -28,10 +31,12 @@
     "cross-env": "^7.0.3",
     "electron": "^44.1.1",
     "electron-builder": "^25.1.8",
+    "jsdom": "^31.0.0",
     "postcss": "^8.4.49",
     "tailwindcss": "^3.4.15",
     "typescript": "^5.6.3",
     "vite": "^5.4.11",
+    "vitest": "^3.2.7",
     "wait-on": "^8.0.1"
   }
 }

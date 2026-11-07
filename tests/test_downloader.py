@@ -5,12 +5,17 @@ import tempfile
 import threading
 import unittest
 
+from unittest import mock
+
 from artifex_core.downloader.downloader import (
     DownloadCancelled,
     DownloadError,
     Progress,
+    _build_args,
     download_file,
+    get_video_info,
     parse_progress_line,
+    parse_qualities,
 )
 
 FAKE_YTDLP = f"""#!{sys.executable}
@@ -56,6 +61,85 @@ class ParseProgressTest(unittest.TestCase):
     def test_ignores_other_lines(self):
         self.assertIsNone(parse_progress_line("[download] Destination: x.mp4"))
         self.assertIsNone(parse_progress_line(""))
+
+
+def _vf(h, fps=30, tbr=1000, size=None, acodec="none"):
+    return {"height": h, "fps": fps, "tbr": tbr, "filesize": size, "vcodec": "avc1", "acodec": acodec}
+
+
+AUDIO_FMT = {"vcodec": "none", "acodec": "opus", "abr": 128, "filesize": 100}
+
+
+class ParseQualitiesTest(unittest.TestCase):
+    def test_dedup_by_height_prefers_higher_fps_and_sorts_desc(self):
+        info = {"formats": [_vf(720, 30, size=500), _vf(1080, 30, size=900), _vf(1080, 60, size=1200), AUDIO_FMT]}
+        result = parse_qualities(info)
+        self.assertEqual([q.height for q in result], [1080, 720])
+        self.assertEqual(result[0].label, "1080p60")
+        self.assertEqual(result[1].label, "720p")
+
+    def test_sums_audio_size(self):
+        result = parse_qualities({"formats": [_vf(720, size=500), AUDIO_FMT]})
+        self.assertEqual(result[0].size, 600)
+
+    def test_unknown_size(self):
+        result = parse_qualities({"formats": [_vf(720), AUDIO_FMT]})
+        self.assertIsNone(result[0].size)
+
+    def test_combined_format_does_not_add_audio(self):
+        result = parse_qualities({"formats": [_vf(360, size=300, acodec="mp4a"), AUDIO_FMT]})
+        self.assertEqual(result[0].size, 300)
+
+    def test_ignores_audio_only_and_empty(self):
+        self.assertEqual(parse_qualities({"formats": [AUDIO_FMT]}), [])
+        self.assertEqual(parse_qualities({}), [])
+
+
+class BuildArgsTest(unittest.TestCase):
+    def _selector(self, args):
+        return args[args.index("-f") + 1]
+
+    def test_best_by_default(self):
+        self.assertEqual(self._selector(_build_args("u", "d.mp4", "mp4")), "bv*+ba/b")
+
+    def test_height_limit(self):
+        sel = self._selector(_build_args("u", "d.mp4", "mp4", 720))
+        self.assertEqual(sel, "bv*[height<=720]+ba/b[height<=720]")
+
+    def test_audio_ignores_height(self):
+        args = _build_args("u", "d.mp3", "mp3", 720)
+        self.assertIn("-x", args)
+        self.assertNotIn("-f", args)
+
+
+class GetVideoInfoTest(unittest.TestCase):
+    def _run(self, **kwargs):
+        proc = mock.Mock(returncode=0, stdout="", stderr="")
+        proc.configure_mock(**kwargs)
+        return mock.patch("subprocess.run", return_value=proc)
+
+    def test_ok(self):
+        out = '{"title": "T", "duration": 61.5, "formats": []}'
+        with self._run(stdout=out):
+            info = get_video_info("u")
+        self.assertEqual((info.title, info.duration, info.qualities), ("T", 61, []))
+
+    def test_ytdlp_error(self):
+        with self._run(returncode=1, stderr="ERROR: [youtube] x: Video unavailable\n"):
+            with self.assertRaisesRegex(DownloadError, "Video unavailable"):
+                get_video_info("u")
+
+    def test_invalid_json(self):
+        with self._run(stdout="nope"):
+            with self.assertRaises(DownloadError):
+                get_video_info("u")
+
+    def test_timeout(self):
+        import subprocess
+
+        with mock.patch("subprocess.run", side_effect=subprocess.TimeoutExpired("yt-dlp", 60)):
+            with self.assertRaises(DownloadError):
+                get_video_info("u")
 
 
 class DownloadFileTest(unittest.TestCase):
