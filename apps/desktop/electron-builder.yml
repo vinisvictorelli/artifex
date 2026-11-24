@@ -1,6 +1,8 @@
 appId: com.artifex.desktop
 productName: Artifex
 electronVersion: 44.1.1
+# Sem módulos nativos (o renderer é empacotado pelo Vite): pula o rebuild/instalação de dependências.
+npmRebuild: false
 directories:
   output: release
   buildResources: build
