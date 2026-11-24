@@ -11,13 +11,11 @@ packages = [
 
 [tool.poetry.dependencies]
 python = ">=3.12,<3.15"
-torch = ">=2.9"
 numpy = ">=2"
 pillow = ">=11.3"
 moviepy = ">=2.2"
 pydub = "==0.25.1"
 speechrecognition = "==3.11.0"
-openai-whisper = ">=20250625,<20250626"
 certifi = ">=2024.12.14,<2025.0.0"
 yt-dlp = {version = ">=2026.10", extras = ["default"]}
 fastapi = "^0.115.0"
@@ -25,6 +23,12 @@ uvicorn = "^0.34.0"
 python-multipart = "^0.0.20"
 audioop-lts = {version = ">=0.2", markers = "python_version >= \"3.13\""}
 standard-aifc = {version = ">=3.13", markers = "python_version >= \"3.13\""}
+
+# Legenda automática. Fica num grupo próprio (instalado por padrão) para que o
+# build do Mac Intel, onde o torch >= 2.9 não existe, possa usar `--without whisper`.
+[tool.poetry.group.whisper.dependencies]
+torch = ">=2.9"
+openai-whisper = ">=20250625,<20250626"
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]

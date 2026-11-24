@@ -1,19 +1,20 @@
 appId: com.artifex.desktop
 productName: Artifex
+electronVersion: 44.1.1
 directories:
   output: release
   buildResources: build
 files:
   - dist-electron/**/*
   - dist-renderer/**/*
+# Backend Python empacotado por `python apps/backend/build.py` (PyInstaller, onedir).
 extraResources:
-  - from: ../backend
+  - from: ../backend/dist/artifex-backend
     to: backend
-    filter:
-      - "**/*"
-      - "!**/__pycache__/**"
+artifactName: ${productName}-${version}-${os}-${arch}.${ext}
 mac:
   category: public.app-category.video
+  target: [dmg]
 linux:
   target: [AppImage]
   category: Video

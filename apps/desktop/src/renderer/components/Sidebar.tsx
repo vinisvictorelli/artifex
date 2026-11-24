@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import logo from "../assets/artifex-logo.svg";
 import { tools } from "../tools/registry";
 
 type SidebarProps = {
@@ -35,7 +36,7 @@ export function Sidebar({ open, activeId, onSelect, onClose }: SidebarProps) {
         aria-hidden={!open}
       >
         <div className="border-b border-white/5 px-5 py-4">
-          <p className="text-sm font-semibold tracking-tight">Artifex</p>
+          <img src={logo} alt="Artifex" className="mb-1 h-5 w-auto" />
           <p className="text-xs text-neutral-500">Automação de produção de vídeo</p>
         </div>
 

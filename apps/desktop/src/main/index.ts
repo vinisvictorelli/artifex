@@ -76,9 +76,15 @@ function startBackend() {
   // Em produção, o Electron sobe o backend empacotado (PyInstaller) via resourcesPath.
   if (isDev) return;
 
-  const backendBin = path.join(process.resourcesPath, "backend", "artifex-backend");
+  const binName = process.platform === "win32" ? "artifex-backend.exe" : "artifex-backend";
+  const backendBin = path.join(process.resourcesPath, "backend", binName);
   backendProcess = spawn(backendBin, [], { stdio: "inherit" });
 }
+
+const iconPath = path.join(
+  __dirname,
+  isDev ? "../../src/renderer/public/icon.png" : "../../dist-renderer/icon.png",
+);
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -87,6 +93,7 @@ function createWindow() {
     minWidth: 900,
     minHeight: 600,
     backgroundColor: "#0f0f12",
+    icon: iconPath,
     titleBarStyle: "hiddenInset",
     webPreferences: {
       preload: path.join(__dirname, "../preload/index.js"),
@@ -112,6 +119,9 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  // Ícone na dock do macOS (em dev o app roda como "Electron" e usaria o
+  // ícone padrão; no app empacotado o .icns do builder já cobre isso).
+  if (process.platform === "darwin") app.dock?.setIcon(iconPath);
   registerDialogHandlers();
   startBackend();
   createWindow();

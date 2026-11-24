@@ -1,0 +1,166 @@
+name: Release
+
+# Publica um RASCUNHO de release com os instaladores de Linux, macOS (Apple
+# Silicon e Intel) e Windows quando uma tag v* é enviada. Revise o rascunho no
+# GitHub e publique manualmente. "Run workflow" gera os instaladores como
+# artefatos do job, sem criar release (útil para testar).
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  PYTHON_VERSION: "3.12"
+  NODE_VERSION: "22"
+
+jobs:
+  test:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: A tag corresponde à versão do app
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          version=$(node -p "require('./apps/desktop/package.json').version")
+          if [ "${GITHUB_REF_NAME}" != "v${version}" ]; then
+            echo "Tag ${GITHUB_REF_NAME} não bate com a versão ${version} de apps/desktop/package.json" >&2
+            exit 1
+          fi
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Testes Python
+        run: |
+          pip install poetry
+          poetry install --no-interaction --without whisper
+          poetry run pip install httpx
+          poetry run python -m unittest discover -s tests -t . -v
+
+      - name: Testes do desktop
+        run: |
+          npm ci
+          npm run typecheck --workspace apps/desktop
+          npm run test --workspace apps/desktop
+
+  build:
+    needs: test
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: linux-x64
+            os: ubuntu-22.04
+            whisper: true
+            torch_cpu_index: true
+          - name: macos-arm64
+            os: macos-14
+            whisper: true
+          # O PyTorch não publica binários para Mac Intel desde a 2.3; este
+          # build sai sem Whisper (a legenda automática responde 501).
+          - name: macos-x64
+            os: macos-15-intel
+            whisper: false
+          - name: windows-x64
+            os: windows-2022
+            whisper: true
+    name: build (${{ matrix.name }})
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Dependências Python
+        run: |
+          pip install poetry
+          poetry config virtualenvs.in-project true
+          if [ "${{ matrix.whisper }}" = "true" ]; then
+            if [ "${{ matrix.torch_cpu_index }}" = "true" ]; then
+              # No Linux o torch do PyPI vem com CUDA (vários GB): usa o build só de CPU.
+              poetry install --no-interaction --without whisper
+              poetry run pip install torch --index-url https://download.pytorch.org/whl/cpu
+              poetry run pip install "openai-whisper>=20250625,<20250626"
+            else
+              poetry install --no-interaction
+            fi
+          else
+            poetry install --no-interaction --without whisper
+          fi
+          poetry run pip install pyinstaller
+
+      - name: Empacotar o backend (PyInstaller)
+        run: |
+          if [ "${{ matrix.whisper }}" = "true" ]; then
+            poetry run python apps/backend/build.py
+          else
+            poetry run python apps/backend/build.py --without-whisper
+          fi
+
+      - name: Smoke test do backend empacotado
+        run: |
+          bin=apps/backend/dist/artifex-backend/artifex-backend
+          [ -f "$bin.exe" ] && bin="$bin.exe"
+          "$bin" --yt-dlp --version
+          "$bin" > backend.log 2>&1 &
+          pid=$!
+          ok=0
+          for i in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:8000/health; then ok=1; break; fi
+            sleep 2
+          done
+          kill "$pid" 2>/dev/null || true
+          if [ "$ok" != "1" ]; then cat backend.log; exit 1; fi
+
+      - name: Instalador do app (Electron)
+        run: |
+          npm ci
+          npm run build --workspace apps/desktop -- --publish never
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: artifex-${{ matrix.name }}
+          if-no-files-found: error
+          path: |
+            apps/desktop/release/*.AppImage
+            apps/desktop/release/*.dmg
+            apps/desktop/release/*.exe
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Criar rascunho de release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          ls -lh dist
+          gh release create "${GITHUB_REF_NAME}" dist/* \
+            --draft --generate-notes --title "Artifex ${GITHUB_REF_NAME}"

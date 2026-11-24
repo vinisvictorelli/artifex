@@ -23,11 +23,15 @@ A API sobe em `http://127.0.0.1:8000`. Endpoints:
 
 ## Empacotando para produção
 
-O app desktop espera um binário standalone em `apps/backend/dist/artifex-backend`, gerado com
-PyInstaller:
+O app desktop espera o backend empacotado em `apps/backend/dist/artifex-backend/` (PyInstaller,
+modo onedir), copiado para os recursos do app pelo `electron-builder`:
 
 ```bash
-poetry run pyinstaller --onefile --name artifex-backend app/main.py
+poetry run pip install pyinstaller
+poetry run python apps/backend/build.py                 # com Whisper
+poetry run python apps/backend/build.py --without-whisper   # sem torch (ex.: Mac Intel)
 ```
 
-O `electron-builder` copia esse binário para os recursos do app (ver `electron-builder.yml`).
+O ponto de entrada é `run.py` (sobe a API em `127.0.0.1:8000`). O mesmo binário também serve de
+`yt-dlp` (`artifex-backend --yt-dlp <args>`), e o `build.py` embute o deno, usado pelo yt-dlp para
+o YouTube, de modo que o usuário final não precisa de Node, yt-dlp nem ffmpeg instalados.

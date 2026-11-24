@@ -3,6 +3,7 @@ import os
 import re
 import shutil
 import subprocess
+import sys
 import threading
 from collections import deque
 from dataclasses import dataclass
@@ -83,7 +84,9 @@ def parse_progress_line(line: str) -> tuple[int, int | None, float | None, int |
 def _base_args() -> list[str]:
     # O yt-dlp só habilita o Deno por padrão; o YouTube exige um runtime JS
     # para resolver os desafios de assinatura (senão as URLs retornam 403).
-    args = ["yt-dlp"]
+    # No app empacotado (PyInstaller) o yt-dlp está dentro do próprio binário do
+    # backend, acessível pela flag --yt-dlp (ver apps/backend/run.py).
+    args = [sys.executable, "--yt-dlp"] if getattr(sys, "frozen", False) else ["yt-dlp"]
     if shutil.which("node"):
         args += ["--js-runtimes", "node"]
     return args

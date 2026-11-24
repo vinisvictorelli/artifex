@@ -11,6 +11,7 @@ from artifex_core.downloader.downloader import (
     DownloadCancelled,
     DownloadError,
     Progress,
+    _base_args,
     _build_args,
     download_file,
     get_video_info,
@@ -110,6 +111,15 @@ class BuildArgsTest(unittest.TestCase):
         args = _build_args("u", "d.mp3", "mp3", 720)
         self.assertIn("-x", args)
         self.assertNotIn("-f", args)
+
+
+class BaseArgsTest(unittest.TestCase):
+    def test_uses_system_ytdlp_by_default(self):
+        self.assertEqual(_base_args()[0], "yt-dlp")
+
+    def test_uses_embedded_ytdlp_when_frozen(self):
+        with mock.patch.object(sys, "frozen", True, create=True):
+            self.assertEqual(_base_args()[:2], [sys.executable, "--yt-dlp"])
 
 
 class GetVideoInfoTest(unittest.TestCase):

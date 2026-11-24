@@ -1,6 +1,8 @@
 import os
 
-import whisper
+
+class WhisperUnavailable(RuntimeError):
+    """O Whisper (torch) não está instalado nesta versão do app."""
 
 
 def mp3_to_srt(
@@ -22,6 +24,13 @@ def mp3_to_srt(
     Returns:
         Caminho do arquivo SRT gerado.
     """
+    try:
+        import whisper
+    except ImportError as exc:
+        raise WhisperUnavailable(
+            "A legenda automática não está disponível nesta versão do Artifex (sem Whisper)."
+        ) from exc
+
     model = whisper.load_model(model_size)
 
     result = model.transcribe(mp3_file, language="pt")
