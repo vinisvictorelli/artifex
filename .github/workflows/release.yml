@@ -63,7 +63,7 @@ jobs:
             whisper: true
             torch_cpu_index: true
           - name: macos-arm64
-            os: macos-14
+            os: macos-15
             whisper: true
           # O PyTorch não publica binários para Mac Intel desde a 2.3; este
           # build sai sem Whisper (a legenda automática responde 501).
